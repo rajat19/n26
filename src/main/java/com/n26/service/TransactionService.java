@@ -1,7 +1,8 @@
 package com.n26.service;
 
 import com.n26.exception.TransactionOutOfRangeException;
-import com.n26.store.interfaces.ITransactionsStore;
+import com.n26.exception.TransactionTimeInFutureException;
+import com.n26.manager.ITransactionsManager;
 import com.n26.model.Transaction;
 import com.n26.service.interfaces.ITransactionService;
 import lombok.extern.slf4j.Slf4j;
@@ -14,10 +15,10 @@ import java.time.Instant;
 @Slf4j
 public class TransactionService implements ITransactionService {
     @Autowired
-    private ITransactionsStore transactionsStore;
+    private ITransactionsManager transactionsStore;
 
     @Override
-    public void addTransaction(Transaction transaction) throws TransactionOutOfRangeException {
+    public void addTransaction(Transaction transaction) throws TransactionOutOfRangeException, TransactionTimeInFutureException {
         long currentTimestamp = Instant.now().toEpochMilli();
         transactionsStore.addTransaction(transaction, currentTimestamp);
     }

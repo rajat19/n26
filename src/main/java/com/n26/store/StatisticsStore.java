@@ -1,10 +1,12 @@
 package com.n26.store;
 
+import com.n26.exception.TransactionOutOfRangeException;
+import com.n26.exception.TransactionTimeInFutureException;
+import com.n26.model.Constant;
 import com.n26.model.Statistics;
 import com.n26.model.Transaction;
-import com.n26.store.interfaces.IStatisticsStore;
 import lombok.Getter;
-import org.springframework.stereotype.Component;
+import lombok.SneakyThrows;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -12,11 +14,11 @@ import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 @Getter
-@Component
 public class StatisticsStore implements IStatisticsStore {
     private final ReadWriteLock lock;
     private final Statistics statistics;
     private long timestamp;
+    private Statistics[] stats;
 
     public StatisticsStore() {
         statistics = new Statistics();
@@ -64,5 +66,13 @@ public class StatisticsStore implements IStatisticsStore {
     public void clear() {
         statistics.reset();
         timestamp = 0;
+    }
+
+    @Override
+    public boolean isValid(long currentTimestamp) {
+        if (currentTimestamp < getTimestamp()) {
+            return false;
+        }
+        return currentTimestamp - getTimestamp() < Constant.TOTAL_WINDOW_SIZE_MILLIS;
     }
 }

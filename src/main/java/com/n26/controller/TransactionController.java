@@ -12,8 +12,6 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.text.ParseException;
-
 @RestController
 public class TransactionController {
     @Autowired
@@ -21,7 +19,7 @@ public class TransactionController {
 
     @PostMapping("/transactions")
     @SneakyThrows
-    public ResponseEntity<?> addTransaction(@RequestBody TransactionRequest transactionRequest) throws ParseException {
+    public ResponseEntity<?> addTransaction(@RequestBody TransactionRequest transactionRequest) {
         Transaction transaction = Transaction.from(transactionRequest);
         transactionService.addTransaction(transaction);
         return ResponseEntity.status(HttpStatus.CREATED).body(null);
