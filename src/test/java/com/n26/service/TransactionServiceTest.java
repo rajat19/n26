@@ -2,9 +2,10 @@ package com.n26.service;
 
 import com.n26.Application;
 import com.n26.exception.TransactionOutOfRangeException;
+import com.n26.exception.TransactionTimeInFutureException;
 import com.n26.model.Transaction;
 import com.n26.store.StatisticsStore;
-import com.n26.store.TransactionsStore;
+import com.n26.manager.TransactionsManager;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -28,28 +29,28 @@ public class TransactionServiceTest {
     private TransactionService transactionService;
 
     @Autowired
-    private TransactionsStore store;
+    private TransactionsManager transactionsManager;
 
     @Before
     public void before(){
-        store.clear();
+        transactionsManager.clear();
     }
 
     @Test(expected= TransactionOutOfRangeException.class )
-    public void testGetExceptionWhenInputHasInvalidTimestamp() throws TransactionOutOfRangeException {
+    public void testGetExceptionWhenInputHasInvalidTimestamp() throws TransactionOutOfRangeException, TransactionTimeInFutureException {
         Transaction txn = new Transaction(BigDecimal.valueOf(12.5), 123);
         transactionService.addTransaction(txn);
     }
 
     @Test
-    public void testEmptyGettingAggregatorsWithInValidTime() {
+    public void testEmptyStoreWithInValidTime() {
         long time = System.currentTimeMillis();
         Transaction txn = new Transaction(BigDecimal.valueOf(12.5), 123);
         try {
             transactionService.addTransaction(txn);
-        } catch (TransactionOutOfRangeException ignored) {}
+        } catch (TransactionOutOfRangeException | TransactionTimeInFutureException ignored) {}
 
-        List<StatisticsStore> list = store.getValidStatisticsStore(time);
+        List<StatisticsStore> list = transactionsManager.getValidStatisticsStore(time);
 
         assertNotNull(list);
         assertEquals(0, list.size());
@@ -79,7 +80,7 @@ public class TransactionServiceTest {
             Thread.sleep(2000); //making sure all completed
         } catch (InterruptedException ignored) {}
 
-        List<StatisticsStore> list = store.getValidStatisticsStore(time);
+        List<StatisticsStore> list = transactionsManager.getValidStatisticsStore(time);
 
         assertNotNull(list);
 
@@ -88,5 +89,37 @@ public class TransactionServiceTest {
             sum += agg.getStatistics().getCount();
         }
         assertEquals(100, sum);
+    }
+
+    @Test
+    public void testConcurrentTransactionsAndThenDelete(){
+        final ExecutorService executor = Executors.newFixedThreadPool(10);
+        long time = System.currentTimeMillis();
+        try{
+            IntStream.range(0, 100).forEach(i-> {
+                executor.execute(()->{
+                    Transaction t = new Transaction(BigDecimal.valueOf(15L * i), time - (i + i * 100L) );
+                    try {
+                        Thread.sleep(1);
+                        transactionService.addTransaction(t);
+                    } catch (Exception ignored) {}
+                });
+
+            });
+
+        }finally{
+            executor.shutdown();
+        }
+
+        try {
+            Thread.sleep(2000); //making sure all completed
+        } catch (InterruptedException ignored) {}
+
+        transactionService.deleteAllTransactions();
+
+        List<StatisticsStore> list = transactionsManager.getValidStatisticsStore(time);
+
+        assertNotNull(list);
+        assertEquals(0, list.size());
     }
 }
