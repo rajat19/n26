@@ -50,6 +50,12 @@ public class Statistics {
         setCount(0);
     }
 
+    public void resetToZero() {
+        reset();
+        setMax(BigDecimal.valueOf(0.00));
+        setMin(BigDecimal.valueOf(0.00));
+    }
+
     public void createFromTransaction(Transaction transaction) {
         BigDecimal amount = transaction.getAmount();
         setAvg(amount);

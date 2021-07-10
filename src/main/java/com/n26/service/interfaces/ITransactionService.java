@@ -1,4 +1,4 @@
-package com.n26.service;
+package com.n26.service.interfaces;
 
 import com.n26.exception.TransactionOutOfRangeException;
 import com.n26.model.Transaction;

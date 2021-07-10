@@ -1,7 +1,9 @@
-package com.n26.model;
+package com.n26.store;
 
 import com.n26.exception.TransactionOutOfRangeException;
 import com.n26.exception.TransactionTimeInFutureException;
+import com.n26.model.Transaction;
+import com.n26.store.interfaces.ITransactionsStore;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -16,8 +18,8 @@ import java.util.stream.Collectors;
 @Component
 @Primary
 @Slf4j
-public class TransactionsContainer implements ITransactionsContainer{
-    private TransactionStatsAggregator[] transactionStatsAggregators;
+public class TransactionsStore implements ITransactionsStore {
+    private StatisticsStore[] statisticsStores;
 
     @Value("${max.time.in.millis:60000}")
     private int maxTimeToKeepInMillis;
@@ -27,12 +29,13 @@ public class TransactionsContainer implements ITransactionsContainer{
 
     @PostConstruct
     public void init() {
-        transactionStatsAggregators = new TransactionStatsAggregator[maxTimeToKeepInMillis / timeIntervalInMillis];
+        statisticsStores = new StatisticsStore[maxTimeToKeepInMillis / timeIntervalInMillis];
         initAggregator();
     }
 
     @Override
-    public void addTransaction(Transaction transaction, long currentTimestamp) throws TransactionOutOfRangeException {
+    @SneakyThrows
+    public void addTransaction(Transaction transaction, long currentTimestamp) {
         if (!isTransactionValid(transaction.getTimestamp(), currentTimestamp)) {
             throw new TransactionOutOfRangeException();
         }
@@ -40,9 +43,9 @@ public class TransactionsContainer implements ITransactionsContainer{
     }
 
     @Override
-    public List<TransactionStatsAggregator> getValidTransactionStatsAggregator(long currentTimestamp) {
-        return Arrays.stream(transactionStatsAggregators)
-                .filter(tsa -> isTransactionValid(tsa.getTimestamp(),currentTimestamp))
+    public List<StatisticsStore> getValidStatisticsStore(long currentTimestamp) {
+        return Arrays.stream(statisticsStores)
+                .filter(ss -> isTransactionValid(ss.getTimestamp(),currentTimestamp))
                 .collect(Collectors.toList());
     }
 
@@ -52,8 +55,8 @@ public class TransactionsContainer implements ITransactionsContainer{
     }
 
     private void initAggregator() {
-        for (int x=0; x<transactionStatsAggregators.length; x++) {
-            transactionStatsAggregators[x] = new TransactionStatsAggregator();
+        for (int i = 0; i< statisticsStores.length; i++) {
+            statisticsStores[i] = new StatisticsStore();
         }
     }
 
@@ -67,21 +70,21 @@ public class TransactionsContainer implements ITransactionsContainer{
 
     private void aggregate(Transaction transaction, long currentTimestamp) {
         int index = getTransactionIndex(transaction, currentTimestamp);
-        TransactionStatsAggregator transactionStatsAggregator = transactionStatsAggregators[index];
+        StatisticsStore statisticsStore = statisticsStores[index];
         try {
-            transactionStatsAggregator.getLock().writeLock().lock();
-            if (transactionStatsAggregator.isEmpty()) {
-                transactionStatsAggregator.create(transaction);
+            statisticsStore.getLock().writeLock().lock();
+            if (statisticsStore.isEmpty()) {
+                statisticsStore.create(transaction);
             } else {
-                if (isTransactionValid(transactionStatsAggregator.getTimestamp(), currentTimestamp)) {
-                    transactionStatsAggregator.merge(transaction);
+                if (isTransactionValid(statisticsStore.getTimestamp(), currentTimestamp)) {
+                    statisticsStore.merge(transaction);
                 } else {
-                    transactionStatsAggregator.reset();
-                    transactionStatsAggregator.create(transaction);
+                    statisticsStore.clear();
+                    statisticsStore.create(transaction);
                 }
             }
         } finally {
-            transactionStatsAggregator.getLock().writeLock().unlock();
+            statisticsStore.getLock().writeLock().unlock();
         }
     }
 

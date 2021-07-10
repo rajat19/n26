@@ -1,6 +1,5 @@
 package com.n26.controller;
 
-import com.n26.exception.TransactionOutOfRangeException;
 import com.n26.model.Transaction;
 import com.n26.model.request.TransactionRequest;
 import com.n26.service.TransactionService;

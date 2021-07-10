@@ -1,6 +1,10 @@
-package com.n26.model;
+package com.n26.store;
 
+import com.n26.model.Statistics;
+import com.n26.model.Transaction;
+import com.n26.store.interfaces.IStatisticsStore;
 import lombok.Getter;
+import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -8,22 +12,25 @@ import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 @Getter
-public class TransactionStatsAggregator {
-    private ReadWriteLock lock;
-    private Statistics statistics;
+@Component
+public class StatisticsStore implements IStatisticsStore {
+    private final ReadWriteLock lock;
+    private final Statistics statistics;
     private long timestamp;
 
-    public TransactionStatsAggregator() {
+    public StatisticsStore() {
         statistics = new Statistics();
         lock = new ReentrantReadWriteLock();
     }
 
+    @Override
     public void create(Transaction transaction) {
         statistics.createFromTransaction(transaction);
         timestamp = transaction.getTimestamp();
     }
 
-    public void merge(Statistics result) {
+    @Override
+    public void mergeToResult(Statistics result) {
         try {
             getLock().readLock().lock();
             result.setSum(result.getSum().add(getStatistics().getSum()));
@@ -38,6 +45,7 @@ public class TransactionStatsAggregator {
         }
     }
 
+    @Override
     public void merge(Transaction transaction) {
         BigDecimal transactionAmount = transaction.getAmount();
         statistics.setSum(statistics.getSum().add(transactionAmount));
@@ -47,11 +55,13 @@ public class TransactionStatsAggregator {
         statistics.setMin(statistics.getMin().min(transactionAmount));
     }
 
+    @Override
     public boolean isEmpty() {
         return statistics.getCount() == 0;
     }
 
-    public void reset() {
+    @Override
+    public void clear() {
         statistics.reset();
         timestamp = 0;
     }
