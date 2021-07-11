@@ -95,6 +95,32 @@ All BigDecimal values always contain exactly two decimal places and use
 This endpoint causes all existing transactions to be deleted
 The endpoint should accept an empty request body and return a `204` status code.
 
+## Running Application
+1. Build jar using
+```shell
+mvn clean install
+```
+2. Run jar using
+```shell
+java $JAVA_OPTS -jar target/coding-challenge-1.0.3.jar -Dserver.port=$PORT $JAR_OPTS
+```
+
+The application is deployed on `heroku` as `n26.herokuapp.com`
+- POST /transactions
+```shell
+curl -X POST http://n26.herokuapp.com/transactions --header 'Content-Type: application/json' --data '{"amount": "35.312","timestamp": "2021-07-11T12:22:51.312Z"}'
+```
+
+- GET /statistics
+```shell
+curl -X GET http://n26.herokuapp.com/statistics
+```
+
+- DELETE /transactions
+```shell
+curl -X DELETE http://n26.herokuapp.com/transactions
+```
+
 ## Design Explained
 
 ### Overall
@@ -138,20 +164,3 @@ b. Calculate statistics from valid store(s) - O(1) by default - maximum 60 aggre
 
 ## Space Complexity
 Requires O(1) . Container array's size is constant and pre-defined and not depended on number of incoming transactions.
-
-## Deployment
-The application is deployed on `heroku` as `n26.herokuapp.com`
-- POST /transactions
-```shell
-curl -X POST http://n26.herokuapp.com/transactions --header 'Content-Type: application/json' --data '{"amount": "35.312","timestamp": "2021-07-11T12:22:51.312Z"}'
-```
-
-- GET /statistics
-```shell
-curl -X GET http://n26.herokuapp.com/statistics
-```
-
-- DELETE /transactions
-```shell
-curl -X DELETE http://n26.herokuapp.com/transactions
-```
