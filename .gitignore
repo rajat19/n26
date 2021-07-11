@@ -223,9 +223,6 @@ pickle-email-*.html
 # Ignore Byebug command history file.
 .byebug_history
 
-# Ignore node_modules
-node_modules/
-
 coding-challenge.iml
 
 *.DS_Store
