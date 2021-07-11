@@ -118,7 +118,8 @@ According to the current time, the manager provides all valid StatisticsStore(s)
 Statistics are calculated by iterating on all valid aggregators.
 
 ### Concurrency Handling Explained
-Each StatisticsStore has its own ReadWriteLock (https://docs.oracle.com/javase/8/docs/api/java/util/concurrent/locks/ReadWriteLock.html)
+Each StatisticsStore has its own  [ReadWriteLock](https://docs.oracle.com/javase/8/docs/api/java/util/concurrent/locks/ReadWriteLock.html)
+
 When a StatisticsStore is taken for an update, write lock is granted. When StatisticsStore is taking for observing and statistics a Read lock is requested.
 ReadWriteLock technique was chosen due to its mechanism to allow non-blocking multiple reads threads. The only time a block will occur is
 when write lock is granted.
@@ -128,7 +129,7 @@ when write lock is granted.
 ### Inserting (POST /transactions)
 Will take O(1) as it only put the valid transaction in to the store array (number of operations is constant)
 
-### Producing Statistics (GET /statistics)
+### Getting Statistics (GET /statistics)
 Will take O(1):
 
 a. Fetching valid StatisticsStore(s) - O(1) by default will iterate on 60 indices
@@ -137,3 +138,20 @@ b. Calculate statistics from valid store(s) - O(1) by default - maximum 60 aggre
 
 ## Space Complexity
 Requires O(1) . Container array's size is constant and pre-defined and not depended on number of incoming transactions.
+
+## Deployment
+The application is deployed on `heroku` as `n26.herokuapp.com`
+- POST /transactions
+```shell
+curl -X POST http://n26.herokuapp.com/transactions --header 'Content-Type: application/json' --data '{"amount": "35.312","timestamp": "2021-07-11T12:22:51.312Z"}'
+```
+
+- GET /statistics
+```shell
+curl -X GET http://n26.herokuapp.com/statistics
+```
+
+- DELETE /transactions
+```shell
+curl -X DELETE http://n26.herokuapp.com/transactions
+```
