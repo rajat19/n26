@@ -22,8 +22,8 @@ import java.util.stream.IntStream;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
+@SpringBootTest
 @RunWith(SpringJUnit4ClassRunner.class)
-@SpringBootTest(classes = Application.class)
 public class TransactionServiceTest {
     @Autowired
     private TransactionService transactionService;
@@ -77,7 +77,7 @@ public class TransactionServiceTest {
         }
 
         try {
-            Thread.sleep(2000); //making sure all completed
+            Thread.sleep(2000);
         } catch (InterruptedException ignored) {}
 
         List<StatisticsStore> list = transactionsManager.getValidStatisticsStore(time);
@@ -112,7 +112,7 @@ public class TransactionServiceTest {
         }
 
         try {
-            Thread.sleep(2000); //making sure all completed
+            Thread.sleep(2000);
         } catch (InterruptedException ignored) {}
 
         transactionService.deleteAllTransactions();

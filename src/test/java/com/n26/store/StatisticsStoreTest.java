@@ -1,4 +1,4 @@
-package com.n26.service;
+package com.n26.store;
 
 import com.n26.Application;
 import com.n26.exception.TransactionOutOfRangeException;
@@ -6,7 +6,7 @@ import com.n26.exception.TransactionTimeInFutureException;
 import com.n26.manager.ITransactionsManager;
 import com.n26.model.Statistics;
 import com.n26.model.Transaction;
-import org.junit.Before;
+import com.n26.service.TransactionService;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -14,39 +14,33 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
 import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.time.Instant;
+import java.util.List;
 import java.util.stream.IntStream;
 
 import static org.junit.Assert.assertEquals;
 
 @SpringBootTest
 @RunWith(SpringJUnit4ClassRunner.class)
-public class StatisticsServiceTest {
-
-    @Autowired
-    private StatisticsService statisticsService;
-
+public class StatisticsStoreTest {
     @Autowired
     private TransactionService transactionService;
 
     @Autowired
     private ITransactionsManager transactionsManager;
 
-    @Before
-    public void before(){
-        transactionsManager.clear();
+    @Test
+    public void testCreateFromTransaction() {
+        Transaction transaction = new Transaction(BigDecimal.valueOf(12.5), 123L);
+        StatisticsStore statisticsStore = new StatisticsStore();
+        statisticsStore.create(transaction);
+        assertEquals(123L, statisticsStore.getTimestamp());
+        assertEquals("12.50", statisticsStore.getStatistics().getSum().toString());
+        assertEquals(1, statisticsStore.getStatistics().getCount());
     }
 
     @Test
-    public void testEmptyStatistics(){
-        Statistics stats = statisticsService.getStatistics();
-        assertEquals(BigDecimal.valueOf(0.00).setScale(2, RoundingMode.HALF_UP), stats.getSum());
-        assertEquals(0L, stats.getCount());
-    }
-
-    @Test
-    public void testNonEmptyStatistics(){
+    public void testAggregateResult() {
         long time = Instant.now().toEpochMilli();
         final BigDecimal[] sum = {BigDecimal.ZERO};
         IntStream.range(0, 100).forEach(i->{
@@ -56,12 +50,16 @@ public class StatisticsServiceTest {
                 transactionService.addTransaction(t);
             } catch (TransactionOutOfRangeException | TransactionTimeInFutureException ignored) {}
         });
+        Statistics result = new Statistics();
+        List<StatisticsStore> validStatisticsStore = transactionsManager.getValidStatisticsStore(System.currentTimeMillis());
+        validStatisticsStore.forEach(store -> store.addToResult(result));
 
-        Statistics stats = statisticsService.getStatistics();
-
-        assertEquals(sum[0].setScale(2, RoundingMode.HALF_UP), stats.getSum());
-        assertEquals(100, stats.getCount());
-        assertEquals(BigDecimal.valueOf(0).setScale(2, RoundingMode.HALF_UP), stats.getMin());
-        assertEquals(BigDecimal.valueOf(99).setScale(2, RoundingMode.HALF_UP), stats.getMax());
+        Statistics expected = new Statistics();
+        expected.setMin(BigDecimal.ZERO);
+        expected.setMax(BigDecimal.valueOf(99));
+        expected.setCount(100);
+        expected.setSum(BigDecimal.valueOf(4950));
+        expected.setAvg(BigDecimal.valueOf(49.5));
+        assertEquals(expected, result);
     }
 }

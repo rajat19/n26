@@ -64,4 +64,14 @@ public class Statistics {
         setSum(amount);
         setCount(1);
     }
+
+    public void addStatistics(Statistics statistics) {
+        setSum(getSum().add(statistics.getSum()));
+        setCount(getCount() + statistics.getCount());
+        BigDecimal average = getSum()
+                .divide(BigDecimal.valueOf(getCount()), 2, RoundingMode.HALF_UP);
+        setAvg(average);
+        setMin(getMin().min(statistics.getMin()));
+        setMax(getMax().max(statistics.getMax()));
+    }
 }

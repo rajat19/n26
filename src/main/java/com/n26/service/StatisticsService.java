@@ -17,13 +17,13 @@ public class StatisticsService implements IStatisticsService {
     @Override
     public Statistics getStatistics() {
         long currentTime = System.currentTimeMillis();
-        List<StatisticsStore> validStatisticsManagers = transactionsManager.getValidStatisticsStore(currentTime);
+        List<StatisticsStore> validStatisticsStore = transactionsManager.getValidStatisticsStore(currentTime);
         Statistics result = new Statistics();
-        if (validStatisticsManagers.isEmpty()) {
+        if (validStatisticsStore.isEmpty()) {
             result.resetToZero();
             return result;
         }
-        validStatisticsManagers.forEach(tsa -> tsa.mergeToResult(result));
+        validStatisticsStore.forEach(store -> store.addToResult(result));
         return result;
     }
 }

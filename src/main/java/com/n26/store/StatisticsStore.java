@@ -1,12 +1,9 @@
 package com.n26.store;
 
-import com.n26.exception.TransactionOutOfRangeException;
-import com.n26.exception.TransactionTimeInFutureException;
 import com.n26.model.Constant;
 import com.n26.model.Statistics;
 import com.n26.model.Transaction;
 import lombok.Getter;
-import lombok.SneakyThrows;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -18,7 +15,6 @@ public class StatisticsStore implements IStatisticsStore {
     private final ReadWriteLock lock;
     private final Statistics statistics;
     private long timestamp;
-    private Statistics[] stats;
 
     public StatisticsStore() {
         statistics = new Statistics();
@@ -32,16 +28,10 @@ public class StatisticsStore implements IStatisticsStore {
     }
 
     @Override
-    public void mergeToResult(Statistics result) {
+    public void addToResult(Statistics result) {
         try {
             getLock().readLock().lock();
-            result.setSum(result.getSum().add(getStatistics().getSum()));
-            result.setCount(result.getCount() + getStatistics().getCount());
-            BigDecimal average = result.getSum()
-                    .divide(BigDecimal.valueOf(result.getCount()), 2, RoundingMode.HALF_UP);
-            result.setAvg(average);
-            result.setMin(result.getMin().min(getStatistics().getMin()));
-            result.setMax(result.getMax().max(getStatistics().getMax()));
+            result.addStatistics(getStatistics());
         } finally {
             getLock().readLock().unlock();
         }
